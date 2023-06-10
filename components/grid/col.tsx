@@ -1,12 +1,14 @@
-import * as React from 'react';
 import classNames from 'classnames';
-import RowContext from './RowContext';
+import * as React from 'react';
 import { ConfigContext } from '../config-provider';
+import RowContext from './RowContext';
+import { useColStyle } from './style';
+import type { LiteralUnion } from '../_util/type';
 
 // https://github.com/ant-design/ant-design/issues/14324
 type ColSpanType = number | string;
 
-type FlexType = number | 'none' | 'auto' | string;
+type FlexType = number | LiteralUnion<'none' | 'auto'>;
 
 export interface ColSize {
   flex?: FlexType;
@@ -64,9 +66,10 @@ const Col = React.forwardRef<HTMLDivElement, ColProps>((props, ref) => {
   } = props;
 
   const prefixCls = getPrefixCls('col', customizePrefixCls);
+  const [wrapSSR, hashId] = useColStyle(prefixCls);
 
   let sizeClassObj = {};
-  sizes.forEach(size => {
+  sizes.forEach((size) => {
     let sizeProps: ColSize = {};
     const propSize = props[size];
     if (typeof propSize === 'number') {
@@ -85,6 +88,7 @@ const Col = React.forwardRef<HTMLDivElement, ColProps>((props, ref) => {
         sizeProps.offset || sizeProps.offset === 0,
       [`${prefixCls}-${size}-push-${sizeProps.push}`]: sizeProps.push || sizeProps.push === 0,
       [`${prefixCls}-${size}-pull-${sizeProps.pull}`]: sizeProps.pull || sizeProps.pull === 0,
+      [`${prefixCls}-${size}-flex-${sizeProps.flex}`]: sizeProps.flex || sizeProps.flex === 'auto',
       [`${prefixCls}-rtl`]: direction === 'rtl',
     };
   });
@@ -100,6 +104,7 @@ const Col = React.forwardRef<HTMLDivElement, ColProps>((props, ref) => {
     },
     className,
     sizeClassObj,
+    hashId,
   );
 
   const mergedStyle: React.CSSProperties = {};
@@ -122,18 +127,20 @@ const Col = React.forwardRef<HTMLDivElement, ColProps>((props, ref) => {
 
     // Hack for Firefox to avoid size issue
     // https://github.com/ant-design/ant-design/pull/20023#issuecomment-564389553
-    if (flex === 'auto' && wrap === false && !mergedStyle.minWidth) {
+    if (wrap === false && !mergedStyle.minWidth) {
       mergedStyle.minWidth = 0;
     }
   }
 
-  return (
+  return wrapSSR(
     <div {...others} style={{ ...mergedStyle, ...style }} className={classes} ref={ref}>
       {children}
-    </div>
+    </div>,
   );
 });
 
-Col.displayName = 'Col';
+if (process.env.NODE_ENV !== 'production') {
+  Col.displayName = 'Col';
+}
 
 export default Col;

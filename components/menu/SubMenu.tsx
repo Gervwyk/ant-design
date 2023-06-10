@@ -1,9 +1,10 @@
-import * as React from 'react';
-import { SubMenu as RcSubMenu, useFullPath } from 'rc-menu';
 import classNames from 'classnames';
+import { SubMenu as RcSubMenu, useFullPath } from 'rc-menu';
 import omit from 'rc-util/lib/omit';
+import * as React from 'react';
+import { cloneElement, isValidElement } from '../_util/reactNode';
+import type { MenuContextProps, MenuTheme } from './MenuContext';
 import MenuContext from './MenuContext';
-import { isValidElement, cloneElement } from '../_util/reactNode';
 
 interface TitleEventEntity {
   key: string;
@@ -23,12 +24,13 @@ export interface SubMenuProps {
   popupOffset?: [number, number];
   popupClassName?: string;
   children?: React.ReactNode;
+  theme?: MenuTheme;
 }
 
-function SubMenu(props: SubMenuProps) {
-  const { popupClassName, icon, title } = props;
+const SubMenu: React.FC<SubMenuProps> = (props) => {
+  const { popupClassName, icon, title, theme: customTheme } = props;
   const context = React.useContext(MenuContext);
-  const { prefixCls, inlineCollapsed, antdMenuTheme } = context;
+  const { prefixCls, inlineCollapsed, theme: contextTheme } = context;
 
   const parentPath = useFullPath();
 
@@ -58,20 +60,24 @@ function SubMenu(props: SubMenuProps) {
     );
   }
 
+  const contextValue = React.useMemo<MenuContextProps>(
+    () => ({ ...context, firstLevel: false }),
+    [context],
+  );
+
   return (
-    <MenuContext.Provider
-      value={{
-        ...context,
-        firstLevel: false,
-      }}
-    >
+    <MenuContext.Provider value={contextValue}>
       <RcSubMenu
         {...omit(props, ['icon'])}
         title={titleNode}
-        popupClassName={classNames(prefixCls, `${prefixCls}-${antdMenuTheme}`, popupClassName)}
+        popupClassName={classNames(
+          prefixCls,
+          popupClassName,
+          `${prefixCls}-${customTheme || contextTheme}`,
+        )}
       />
     </MenuContext.Provider>
   );
-}
+};
 
 export default SubMenu;

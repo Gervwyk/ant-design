@@ -1,6 +1,7 @@
-import * as React from 'react';
 import classNames from 'classnames';
+import * as React from 'react';
 import { ConfigContext } from '../config-provider';
+import useStyle from './style';
 
 export interface CheckableTagProps {
   prefixCls?: string;
@@ -12,18 +13,20 @@ export interface CheckableTagProps {
    * .zh-cn 该组件为完全受控组件，不支持非受控用法。
    */
   checked: boolean;
+  children?: React.ReactNode;
   onChange?: (checked: boolean) => void;
   onClick?: (e: React.MouseEvent<HTMLSpanElement, MouseEvent>) => void;
 }
 
-const CheckableTag: React.FC<CheckableTagProps> = ({
-  prefixCls: customizePrefixCls,
-  className,
-  checked,
-  onChange,
-  onClick,
-  ...restProps
-}) => {
+const CheckableTag: React.FC<CheckableTagProps> = (props) => {
+  const {
+    prefixCls: customizePrefixCls,
+    className,
+    checked,
+    onChange,
+    onClick,
+    ...restProps
+  } = props;
   const { getPrefixCls } = React.useContext(ConfigContext);
 
   const handleClick = (e: React.MouseEvent<HTMLSpanElement, MouseEvent>) => {
@@ -32,6 +35,9 @@ const CheckableTag: React.FC<CheckableTagProps> = ({
   };
 
   const prefixCls = getPrefixCls('tag', customizePrefixCls);
+  // Style
+  const [wrapSSR, hashId] = useStyle(prefixCls);
+
   const cls = classNames(
     prefixCls,
     {
@@ -39,9 +45,10 @@ const CheckableTag: React.FC<CheckableTagProps> = ({
       [`${prefixCls}-checkable-checked`]: checked,
     },
     className,
+    hashId,
   );
 
-  return <span {...restProps} className={cls} onClick={handleClick} />;
+  return wrapSSR(<span {...restProps} className={cls} onClick={handleClick} />);
 };
 
 export default CheckableTag;

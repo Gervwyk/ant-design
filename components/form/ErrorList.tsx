@@ -1,95 +1,134 @@
-import * as React from 'react';
 import classNames from 'classnames';
-import CSSMotion from 'rc-motion';
-import useMemo from 'rc-util/lib/hooks/useMemo';
-import useCacheErrors from './hooks/useCacheErrors';
-import useForceUpdate from '../_util/hooks/useForceUpdate';
+import CSSMotion, { CSSMotionList } from 'rc-motion';
+import * as React from 'react';
+import { useMemo } from 'react';
+import initCollapseMotion from '../_util/motion';
 import { FormItemPrefixContext } from './context';
-import { ConfigContext } from '../config-provider';
+import type { ValidateStatus } from './FormItem';
+import useDebounce from './hooks/useDebounce';
+
+import useStyle from './style';
 
 const EMPTY_LIST: React.ReactNode[] = [];
 
+interface ErrorEntity {
+  error: React.ReactNode;
+  errorStatus?: ValidateStatus;
+  key: string;
+}
+
+function toErrorEntity(
+  error: React.ReactNode,
+  prefix: string,
+  errorStatus?: ValidateStatus,
+  index: number = 0,
+): ErrorEntity {
+  return {
+    key: typeof error === 'string' ? error : `${prefix}-${index}`,
+    error,
+    errorStatus,
+  };
+}
+
 export interface ErrorListProps {
-  errors?: React.ReactNode[];
-  /** @private Internal Usage. Do not use in your production */
+  fieldId?: string;
   help?: React.ReactNode;
-  /** @private Internal Usage. Do not use in your production */
-  onDomErrorVisibleChange?: (visible: boolean) => void;
+  helpStatus?: ValidateStatus;
+  errors?: React.ReactNode[];
+  warnings?: React.ReactNode[];
+  className?: string;
+  onVisibleChanged?: (visible: boolean) => void;
 }
 
 export default function ErrorList({
-  errors = EMPTY_LIST,
   help,
-  onDomErrorVisibleChange,
+  helpStatus,
+  errors = EMPTY_LIST,
+  warnings = EMPTY_LIST,
+  className: rootClassName,
+  fieldId,
+  onVisibleChanged,
 }: ErrorListProps) {
-  const forceUpdate = useForceUpdate();
-  const { prefixCls, status } = React.useContext(FormItemPrefixContext);
-  const { getPrefixCls } = React.useContext(ConfigContext);
-
-  const [visible, cacheErrors] = useCacheErrors(
-    errors,
-    changedVisible => {
-      if (changedVisible) {
-        /**
-         * We trigger in sync to avoid dom shaking but this get warning in react 16.13.
-         *
-         * So use Promise to keep in micro async to handle this.
-         * https://github.com/ant-design/ant-design/issues/21698#issuecomment-593743485
-         */
-        Promise.resolve().then(() => {
-          onDomErrorVisibleChange?.(true);
-        });
-      }
-      forceUpdate();
-    },
-    !!help,
-  );
-
-  const memoErrors = useMemo(
-    () => cacheErrors,
-    visible,
-    (_, nextVisible) => nextVisible,
-  );
-
-  // Memo status in same visible
-  const [innerStatus, setInnerStatus] = React.useState(status);
-  React.useEffect(() => {
-    if (visible && status) {
-      setInnerStatus(status);
-    }
-  }, [visible, status]);
+  const { prefixCls } = React.useContext(FormItemPrefixContext);
 
   const baseClassName = `${prefixCls}-item-explain`;
-  const rootPrefixCls = getPrefixCls();
+
+  const [, hashId] = useStyle(prefixCls);
+
+  const collapseMotion = useMemo(() => initCollapseMotion(prefixCls), [prefixCls]);
+
+  // We have to debounce here again since somewhere use ErrorList directly still need no shaking
+  // ref: https://github.com/ant-design/ant-design/issues/36336
+  const debounceErrors = useDebounce(errors);
+  const debounceWarnings = useDebounce(warnings);
+
+  const fullKeyList = React.useMemo<ErrorEntity[]>(() => {
+    if (help !== undefined && help !== null) {
+      return [toErrorEntity(help, 'help', helpStatus)];
+    }
+
+    return [
+      ...debounceErrors.map((error, index) => toErrorEntity(error, 'error', 'error', index)),
+      ...debounceWarnings.map((warning, index) =>
+        toErrorEntity(warning, 'warning', 'warning', index),
+      ),
+    ];
+  }, [help, helpStatus, debounceErrors, debounceWarnings]);
+
+  const helpProps: { id?: string } = {};
+
+  if (fieldId) {
+    helpProps.id = `${fieldId}_help`;
+  }
 
   return (
     <CSSMotion
-      motionDeadline={500}
-      visible={visible}
-      motionName={`${rootPrefixCls}-show-help`}
-      onLeaveEnd={() => {
-        onDomErrorVisibleChange?.(false);
-      }}
+      motionDeadline={collapseMotion.motionDeadline}
+      motionName={`${prefixCls}-show-help`}
+      visible={!!fullKeyList.length}
+      onVisibleChanged={onVisibleChanged}
     >
-      {({ className: motionClassName }: { className?: string }) => (
-        <div
-          className={classNames(
-            baseClassName,
-            {
-              [`${baseClassName}-${innerStatus}`]: innerStatus,
-            },
-            motionClassName,
-          )}
-          key="help"
-        >
-          {memoErrors.map((error, index) => (
-            // eslint-disable-next-line react/no-array-index-key
-            <div key={index} role="alert">
-              {error}
-            </div>
-          ))}
-        </div>
-      )}
+      {(holderProps) => {
+        const { className: holderClassName, style: holderStyle } = holderProps;
+
+        return (
+          <div
+            {...helpProps}
+            className={classNames(baseClassName, holderClassName, rootClassName, hashId)}
+            style={holderStyle}
+            role="alert"
+          >
+            <CSSMotionList
+              keys={fullKeyList}
+              {...initCollapseMotion(prefixCls)}
+              motionName={`${prefixCls}-show-help-item`}
+              component={false}
+            >
+              {(itemProps) => {
+                const {
+                  key,
+                  error,
+                  errorStatus,
+                  className: itemClassName,
+                  style: itemStyle,
+                } = itemProps;
+
+                return (
+                  <div
+                    key={key}
+                    className={classNames(itemClassName, {
+                      [`${baseClassName}-${errorStatus}`]: errorStatus,
+                    })}
+                    style={itemStyle}
+                  >
+                    {error}
+                  </div>
+                );
+              }}
+            </CSSMotionList>
+          </div>
+        );
+      }}
     </CSSMotion>
   );
 }

@@ -16,7 +16,7 @@ All work on Ant Design happens directly on [GitHub](https://github.com/ant-desig
 
 ## Branch Organization
 
-According to our [release schedule](changelog#Release-Schedule), we maintain two branches, `master` and `feature`. If you send a bugfix pull request, please do it against the `master` branch, if it's a feature pull request, please do it against the `feature` branch.
+According to our [release schedule](/changelog#release-schedule), we maintain two branches, `master` and `feature`. If you send a bugfix pull request, please do it against the `master` branch, if it's a feature pull request, please do it against the `feature` branch.
 
 ## Bugs
 
@@ -48,11 +48,11 @@ The core team is monitoring for pull requests. We will review your pull request 
 
 **Before submitting a pull request**, please make sure the following is done:
 
-1. Fork the repository and create your branch from the [correct branch](#Branch-Organization).
+1. Fork the repository and create your branch from the [correct branch](#branch-organization).
 1. Run `npm install` in the repository root.
 1. If you've fixed a bug or added code that should be tested, add tests!
 1. Ensure the test suite passes (npm run test). Tip: `npm test -- --watch TestName` is helpful in development.
-1. Run `npm test -- -u` to update the [jest snapshots](http://facebook.github.io/jest/docs/en/snapshot-testing.html#snapshot-testing-with-jest) and commit these changes as well (if there are any updates).
+1. Run `npm test -- -u` to update the [jest snapshots](https://jestjs.io/docs/snapshot-testing) and commit these changes as well (if there are any updates).
 1. Ensure the UI change passes `npm run test-image`，Run `npm run test-image -- -u` to update UI snapshots and commit these changes as well (if there are any updates), **UI test base on [Docker](https://docs.docker.com/get-docker/), need download the corresponding installation according to the platform**
 1. Make sure your code lints (npm run lint). Tip: Lint runs automatically when you `git commit` (Use [Git Hooks](https://git-scm.com/book/en/v2/Customizing-Git-Git-Hooks)).
 
@@ -62,6 +62,12 @@ Since antd's components are based on react-component, sometimes you may need to 
 
 ## Development Workflow
 
+Before you can start you must run the following command to enable [corepack](https://nodejs.org/api/corepack.html)。
+
+```bash
+corepack enable
+```
+
 After cloning antd, run `npm install` to fetch its dependencies. Then, you can run several commands:
 
 1. `npm start` runs Ant Design website locally.
@@ -70,6 +76,15 @@ After cloning antd, run `npm install` to fetch its dependencies. Then, you can r
 1. `npm run compile` compiles TypeScript code to the `lib` and `es` directory.
 1. `npm run dist` creates UMD build of antd.
 
+## Development Tools
+
+- VSCode plugin for CSS in JS: https://marketplace.visualstudio.com/items?itemName=shezhangzhang.antd-design-token
+- Ant Design cheatsheet in VS Code: https://github.com/fi3ework/vscode-antd-rush
+
 ## Being a collaborator
 
 If you are an active contributor and are willing to work with Ant Design Team in our opensource workflow, you can [apply to be a outside collaborator](https://github.com/ant-design/ant-design/wiki/Collaborators#how-to-apply-for-being-a-collaborator).
+
+You can also refer to the following contribution guide to become an antd contributor:
+
+- [How to Grow as a Collaborator](/docs/blog/to-be-collaborator)
